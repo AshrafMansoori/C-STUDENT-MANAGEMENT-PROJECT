@@ -1,184 +1,381 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX 100
 
-struct Student {
-    int rollNo;
+struct Account
+{
+    int accNo;
     char name[50];
-    float marks1, marks2, marks3;
-    float total, average;
-    char grade;
+    int pin;
+    float balance;
 };
 
-struct Student students[MAX];
-int count = 0;
+struct Account accounts[MAX];
+int totalAccounts = 0;
 
-// Calculate total, average and grade
-void calculateResult(struct Student *s) {
-    s->total = s->marks1 + s->marks2 + s->marks3;
-    s->average = s->total / 3;
+/* Function Declarations */
+void loadAccounts();
+void saveAccounts();
+void mainMenu();
 
-    if (s->average >= 90)
-        s->grade = 'A';
-    else if (s->average >= 75)
-        s->grade = 'B';
-    else if (s->average >= 60)
-        s->grade = 'C';
-    else if (s->average >= 40)
-        s->grade = 'D';
-    else
-        s->grade = 'F';
+int login();
+void userMenu(int index);
+void balanceInquiry(int index);
+void depositMoney(int index);
+void withdrawMoney(int index);
+
+void transferMoney(int index);
+void changePin(int index);
+void miniStatement(int index);
+
+int main()
+{
+    loadAccounts();
+    mainMenu();
+    return 0;
 }
 
-// Add student
-void addStudent() {
-    if (count >= MAX) {
-        printf("Student limit reached!\n");
+void mainMenu()
+{
+    int choice;
+
+    while (1)
+    {
+        printf("\n\n");
+        printf("ATM BANKING SYSTEM\n");
+        printf("__________________\n");
+        printf("1. Login\n");
+        printf("2. Exit\n");
+        printf("-----------------\n");
+        printf("Enter Choice : ");
+        scanf("%d", &choice);
+
+        switch (choice)
+        {
+        case 1:
+        {
+            int index = login();
+
+            if (index != -1)
+                userMenu(index);
+
+            break;
+        }
+
+        case 2:
+            printf("\nThank You For Using HSR BANK ATM.\n");
+            exit(0);
+
+        default:
+            printf("\nInvalid Choice!\n");
+        }
+    }
+}
+
+void saveAccounts()
+{
+    FILE *fp;
+    int i;
+
+    fp = fopen("bank.dat", "wb");
+
+    if (fp == NULL)
+    {
+        printf("File Error!\n");
         return;
     }
 
-    printf("\nEnter Roll Number: ");
-    scanf("%d", &students[count].rollNo);
+    for (i = 0; i < totalAccounts; i++)
+    {
+        fwrite(&accounts[i],
+               sizeof(struct Account),
+               1,
+               fp);
+    }
 
-    printf("Enter Name: ");
-    scanf(" %[^\n]", students[count].name);
-
-    printf("Enter Marks of Subject 1: ");
-    scanf("%f", &students[count].marks1);
-
-    printf("Enter Marks of Subject 2: ");
-    scanf("%f", &students[count].marks2);
-
-    printf("Enter Marks of Subject 3: ");
-    scanf("%f", &students[count].marks3);
-
-    calculateResult(&students[count]);
-
-    count++;
-
-    printf("\nStudent Added Successfully.\n");
+    fclose(fp);
 }
 
-// Display students
-void displayStudents() {
+void loadAccounts()
+{
+    FILE *fp;
 
-    if (count == 0) {
-        printf("\nNo Records Found.\n");
+    fp = fopen("bank.dat", "rb");
+
+    if (fp == NULL)
+    {
+        printf("\nCustomer Database Not Found!\n");
         return;
     }
 
-    printf("\n------------------------------------------------------------------------------------------\n");
-    printf("Roll\tName\t\tSub1\tSub2\tSub3\tTotal\tAverage\tGrade\n");
-    printf("------------------------------------------------------------------------------------------\n");
+    totalAccounts = 0;
 
-    for (int i = 0; i < count; i++) {
-        printf("%d\t%-12s\t%.0f\t%.0f\t%.0f\t%.0f\t%.2f\t%c\n",
-               students[i].rollNo,
-               students[i].name,
-               students[i].marks1,
-               students[i].marks2,
-               students[i].marks3,
-               students[i].total,
-               students[i].average,
-               students[i].grade);
+    while (fread(&accounts[totalAccounts],
+                 sizeof(struct Account),
+                 1,
+                 fp))
+    {
+        totalAccounts++;
+    }
+
+    fclose(fp);
+}
+
+int login()
+{
+    int accNo, pin;
+    int i;
+    int attempts = 3;
+    int found = -1;
+
+    printf("\n------- LOGIN -------\n");
+
+    printf("Enter Account Number : ");
+    scanf("%d", &accNo);
+
+    for (i = 0; i < totalAccounts; i++)
+    {
+        if (accounts[i].accNo == accNo)
+        {
+            found = i;
+            break;
+        }
+    }
+
+    if (found == -1)
+    {
+        printf("Account Not Found.\n");
+        return -1;
+    }
+
+    while (attempts > 0)
+    {
+        printf("Enter PIN : ");
+        scanf("%d", &pin);
+
+        if (accounts[found].pin == pin)
+        {
+            printf("\nLogin Successful.\n");
+            return found;
+        }
+
+        attempts--;
+
+        if (attempts > 0)
+            printf("Wrong PIN! Attempts Left : %d\n", attempts);
+    }
+
+    printf("\nToo Many Failed Attempts.\n");
+
+    return -1;
+}
+
+void userMenu(int index)
+{
+    int choice;
+
+    while (1)
+    {
+        printf("\n\n");
+        printf("      HSR BANK ATM\n");
+        printf("_________________________\n");
+        printf("Welcome! %s\n", accounts[index].name);
+        printf("-------------------------\n");
+        printf("1. Balance Inquiry\n");
+        printf("2. Deposit Money\n");
+        printf("3. Withdraw Money\n");
+        printf("4. Transfer Money\n");
+        printf("5. Change PIN\n");
+        printf("6. Mini Statement\n");
+        printf("7. Logout\n");
+        printf("----------------------\n");
+        printf("Enter Choice : ");
+        scanf("%d", &choice);
+
+        switch (choice)
+        {
+        case 1:
+            balanceInquiry(index);
+            break;
+
+        case 2:
+            depositMoney(index);
+            break;
+
+        case 3:
+            withdrawMoney(index);
+            break;
+
+        case 4:
+            transferMoney(index);
+            break;
+
+        case 5:
+            changePin(index);
+            break;
+
+        case 6:
+            miniStatement(index);
+            break;
+
+        case 7:
+            saveAccounts();
+            printf("\nLogged Out Successfully.\n");
+            return;
+
+        default:
+            printf("\nInvalid Choice!\n");
+        }
     }
 }
 
-// Search student
-void searchStudent() {
+void balanceInquiry(int index)
+{
+    printf("\n-------------------------\n");
+    printf("Account Number : %d\n", accounts[index].accNo);
+    printf("Name           : %s\n", accounts[index].name);
+    printf("Balance        : %.2f\n", accounts[index].balance);
+    printf("-------------------------\n");
+}
 
-    int roll;
+void depositMoney(int index)
+{
+    float amount;
 
-    printf("Enter Roll Number: ");
-    scanf("%d", &roll);
+    printf("\nEnter Amount : ");
+    scanf("%f", &amount);
 
-    for (int i = 0; i < count; i++) {
-        if (students[i].rollNo == roll) {
-            printf("\nStudent Found\n");
-            printf("Roll Number : %d\n", students[i].rollNo);
-            printf("Name        : %s\n", students[i].name);
-            printf("Total       : %.2f\n", students[i].total);
-            printf("Average     : %.2f\n", students[i].average);
-            printf("Grade       : %c\n", students[i].grade);
+    if (amount <= 0)
+    {
+        printf("Invalid Amount!\n");
+        return;
+    }
+
+    accounts[index].balance += amount;
+
+    saveAccounts();
+
+    printf("Amount Deposited Successfully.\n");
+    printf("Current Balance : %.2f\n", accounts[index].balance);
+}
+
+void withdrawMoney(int index)
+{
+    float amount;
+
+    printf("\nEnter Amount : ");
+    scanf("%f", &amount);
+
+    if (amount <= 0)
+    {
+        printf("Invalid Amount!\n");
+        return;
+    }
+
+    if (amount > accounts[index].balance)
+    {
+        printf("Insufficient Balance!\n");
+        return;
+    }
+
+    accounts[index].balance -= amount;
+
+    saveAccounts();
+
+    printf("Please Collect Your Cash.\n");
+    printf("Remaining Balance : %.2f\n", accounts[index].balance);
+}
+
+void transferMoney(int index)
+{
+    int accNo, i;
+    float amount;
+
+    printf("\nEnter Receiver Account Number : ");
+    scanf("%d", &accNo);
+
+    if (accNo == accounts[index].accNo)
+    {
+        printf("Cannot transfer to same account.\n");
+        return;
+    }
+
+    for (i = 0; i < totalAccounts; i++)
+    {
+        if (accounts[i].accNo == accNo)
+        {
+            printf("Enter Amount : ");
+            scanf("%f", &amount);
+
+            if (amount <= 0)
+            {
+                printf("Invalid Amount.\n");
+                return;
+            }
+
+            if (amount > accounts[index].balance)
+            {
+                printf("Insufficient Balance.\n");
+                return;
+            }
+
+            accounts[index].balance -= amount;
+            accounts[i].balance += amount;
+
+            saveAccounts();
+
+            printf("Transfer Successful.\n");
             return;
         }
     }
 
-    printf("Student Not Found!\n");
+    printf("Receiver Account Not Found.\n");
 }
 
-// Save records to file
-void saveToFile() {
+void changePin(int index)
+{
+    int oldPin, newPin;
 
-    FILE *fp = fopen("students.txt", "w");
+    printf("Enter Current PIN : ");
+    scanf("%d", &oldPin);
 
-    if (fp == NULL) {
-        printf("Unable to create file.\n");
+    if (oldPin != accounts[index].pin)
+    {
+        printf("Incorrect PIN.\n");
         return;
     }
 
-    for (int i = 0; i < count; i++) {
-        fprintf(fp,
-                "%d %s %.2f %.2f %.2f %.2f %.2f %c\n",
-                students[i].rollNo,
-                students[i].name,
-                students[i].marks1,
-                students[i].marks2,
-                students[i].marks3,
-                students[i].total,
-                students[i].average,
-                students[i].grade);
+    printf("Enter New 4 Digit PIN : ");
+    scanf("%d", &newPin);
+
+    if (newPin < 1000 || newPin > 9999)
+    {
+        printf("PIN must be 4 digits.\n");
+        return;
     }
 
-    fclose(fp);
+    if (oldPin == newPin)
+    {
+        printf("New PIN cannot be same as old PIN.\n");
+        return;
+    }
 
-    printf("Data Saved Successfully to students.txt\n");
+    accounts[index].pin = newPin;
+
+    saveAccounts();
+
+    printf("PIN Changed Successfully.\n");
 }
 
-int main() {
-
-    int choice;
-
-    do {
-
-        printf("\n========== Student Result Management System ==========\n");
-        printf("1. Add Student\n");
-        printf("2. Display Students\n");
-        printf("3. Search Student\n");
-        printf("4. Save Records to File\n");
-        printf("5. Exit\n");
-
-        printf("Enter Choice: ");
-        scanf("%d", &choice);
-
-        switch (choice) {
-
-            case 1:
-                addStudent();
-                break;
-
-            case 2:
-                displayStudents();
-                break;
-
-            case 3:
-                searchStudent();
-                break;
-
-            case 4:
-                saveToFile();
-                break;
-
-            case 5:
-                printf("Thank You!\n");
-                break;
-
-            default:
-                printf("Invalid Choice!\n");
-        }
-
-    } while (choice != 5);
-
-    return 0;
+void miniStatement(int index)
+{
+    printf("\n___________________________\n");
+    printf("        MINI STATEMENT\n");
+    printf("______________________________\n");
+    printf("Account No : %d\n", accounts[index].accNo);
+    printf("Name       : %s\n", accounts[index].name);
+    printf("Balance    : %.2f\n", accounts[index].balance);
+    printf("-----------------------\n");
 }
