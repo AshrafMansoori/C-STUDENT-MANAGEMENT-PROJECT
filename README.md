@@ -185,7 +185,7 @@ This project demonstrates:
 
 ##  Author
 
-**Harpal Singh Lodhi**
+**ASHRAFUL HAQ AAMIR**
 
 B.Tech Computer Science & Engineering (AI)
 
